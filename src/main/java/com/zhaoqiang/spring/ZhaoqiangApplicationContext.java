@@ -1,7 +1,8 @@
 package com.zhaoqiang.spring;
 
+import java.beans.Introspector;
 import java.io.File;
-import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,9 @@ public class ZhaoqiangApplicationContext {
      */
     private ConcurrentHashMap<String, BeanDefination> beanDefinationMap = new ConcurrentHashMap<>();
 
+    /**
+     * 单例池
+     */
     private ConcurrentHashMap<String, Object> singtonObjects  = new ConcurrentHashMap<>();
 
     /**
@@ -47,17 +51,21 @@ public class ZhaoqiangApplicationContext {
                         String clasName = fileName.substring(fileName.indexOf("com"), fileName.indexOf(".class"));
 
                         clasName = clasName.replace("/", ".");
-                        Class<?> aClass = null;
+                        Class<?> aClass;
                         try {
                             aClass = classLoader.loadClass(clasName);
                         } catch (ClassNotFoundException e) {
                             throw new RuntimeException(e);
                         }
-
-
                         if (aClass.isAnnotationPresent(Component.class)) {
                             Component component = aClass.getAnnotation(Component.class);
                             String beanName = component.value();
+                            // 如果component没有设置value，没有beanName
+                            if (beanName.equals("")) {
+                                // 获取类名，首字母小写
+                                String simpleName = aClass.getSimpleName();
+                                beanName = Introspector.decapitalize(simpleName);
+                            }
 
                             // 注册成为beanDefination
                             // 因为如果是多例的，不应该在容器启动时就创建对象。所以先用BeanDefination包装一下
@@ -99,6 +107,17 @@ public class ZhaoqiangApplicationContext {
         try {
             // 调用无参构造
             Object instance = clazz.getConstructor().newInstance();
+
+            // 看是否有属性加Autowired，需要给初始化
+            for (Field field : clazz.getDeclaredFields()) {
+                // 如果属性有Autowired，则给属性创建实例
+                if (field.isAnnotationPresent(Autowired.class)) {
+                    field.setAccessible(true);
+                    // 此处beanName不能用传进来的，那个是原来bean的name，应该是属性的bean的名称
+                    field.set(instance, getBean(field.getName()));
+                }
+            }
+
             return instance;
         } catch (InstantiationException e) {
             throw new RuntimeException(e);
@@ -111,6 +130,13 @@ public class ZhaoqiangApplicationContext {
         }
     }
 
+    /**
+     * 获取单例或者多例bean，如果是单例，优先从单例池拿
+     * 如果是多例bean，直接调用createBean创建
+     *
+     * @param beanName
+     * @return
+     */
     public Object getBean(String beanName) {
         // 区分单例bean，还是多例bean
         BeanDefination beanDefination = beanDefinationMap.get(beanName);
