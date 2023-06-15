@@ -108,7 +108,7 @@ public class ZhaoqiangApplicationContext {
             // 调用无参构造
             Object instance = clazz.getConstructor().newInstance();
 
-            // 看是否有属性加Autowired，需要给初始化
+            // 依赖注入
             for (Field field : clazz.getDeclaredFields()) {
                 // 如果属性有Autowired，则给属性创建实例
                 if (field.isAnnotationPresent(Autowired.class)) {
@@ -116,6 +116,10 @@ public class ZhaoqiangApplicationContext {
                     // 此处beanName不能用传进来的，那个是原来bean的name，应该是属性的bean的名称
                     field.set(instance, getBean(field.getName()));
                 }
+            }
+
+            if (instance instanceof BeanNameAware) {
+                ((BeanNameAware)instance).setBeanName(beanName);
             }
 
             return instance;
