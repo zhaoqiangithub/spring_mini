@@ -5,6 +5,8 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ZhaoqiangApplicationContext {
@@ -23,6 +25,11 @@ public class ZhaoqiangApplicationContext {
      * 单例池
      */
     private ConcurrentHashMap<String, Object> singtonObjects  = new ConcurrentHashMap<>();
+
+    /**
+     * BeanPostProcesser集合
+     */
+    private List<BeanPostProcesser> beanPostProcesserList = new ArrayList<>();
 
     /**
      * 构造方法
@@ -59,6 +66,20 @@ public class ZhaoqiangApplicationContext {
                         }
                         if (aClass.isAnnotationPresent(Component.class)) {
                             Component component = aClass.getAnnotation(Component.class);
+
+                            // BeanPostProcesser处理逻辑
+                            if (BeanPostProcesser.class.isAssignableFrom(aClass)) {
+                                try {
+                                    BeanPostProcesser beanPostProcesser = (BeanPostProcesser) aClass.newInstance();
+                                    beanPostProcesserList.add(beanPostProcesser);
+
+                                } catch (InstantiationException e) {
+                                    throw new RuntimeException(e);
+                                } catch (IllegalAccessException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+
                             String beanName = component.value();
                             // 如果component没有设置value，没有beanName
                             if (beanName.equals("")) {
@@ -70,8 +91,9 @@ public class ZhaoqiangApplicationContext {
                             // 注册成为beanDefination
                             // 因为如果是多例的，不应该在容器启动时就创建对象。所以先用BeanDefination包装一下
                             BeanDefination beanDefination = new BeanDefination();
+                            beanDefination.setClazz(aClass);
+
                             if (aClass.isAnnotationPresent(Scope.class)) {
-                                beanDefination.setClazz(aClass);
                                 Scope annotation = aClass.getAnnotation(Scope.class);
                                 String value = annotation.value();
                                 beanDefination.setScope(value);
@@ -123,9 +145,19 @@ public class ZhaoqiangApplicationContext {
                 ((BeanNameAware)instance).setBeanName(beanName);
             }
 
+            // 调用BeanPostProcesser的初始化前
+            for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
+                beanPostProcesser.postProcessBeforeInilazation(beanName, instance);
+            }
+
             // 初始化
             if (instance instanceof InitializingBean) {
                 ((InitializingBean)instance).afterPropertiesSet();
+            }
+
+            // 调用BeanPostProcesser的初始化后
+            for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
+                beanPostProcesser.postProcessAfterInilazation(beanName, instance);
             }
 
             return instance;
