@@ -1,13 +1,10 @@
 package com.zhaoqiang.service;
 
-import com.zhaoqiang.spring.Autowired;
-import com.zhaoqiang.spring.BeanNameAware;
-import com.zhaoqiang.spring.Component;
-import com.zhaoqiang.spring.Scope;
+import com.zhaoqiang.spring.*;
 
 @Component
 @Scope("singleton")
-public class UserService implements BeanNameAware {
+public class UserService implements BeanNameAware, InitializingBean {
 
     @Autowired
     private OrderService orderService;
@@ -20,5 +17,12 @@ public class UserService implements BeanNameAware {
     @Override
     public void setBeanName(String beanName) {
         System.out.println(beanName);
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        System.out.println("userService初始化");
+
+
     }
 }

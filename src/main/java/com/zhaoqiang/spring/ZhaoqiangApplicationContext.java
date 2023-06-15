@@ -118,8 +118,14 @@ public class ZhaoqiangApplicationContext {
                 }
             }
 
+            // Aware回调
             if (instance instanceof BeanNameAware) {
                 ((BeanNameAware)instance).setBeanName(beanName);
+            }
+
+            // 初始化
+            if (instance instanceof InitializingBean) {
+                ((InitializingBean)instance).afterPropertiesSet();
             }
 
             return instance;
