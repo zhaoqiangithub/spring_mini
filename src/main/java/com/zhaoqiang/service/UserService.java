@@ -4,7 +4,7 @@ import com.zhaoqiang.spring.*;
 
 @Component
 @Scope("singleton")
-public class UserService implements BeanNameAware, InitializingBean {
+public class UserService implements BeanNameAware, InitializingBean, UserInterface {
 
     @Autowired
     private OrderService orderService;

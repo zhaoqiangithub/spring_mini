@@ -147,7 +147,7 @@ public class ZhaoqiangApplicationContext {
 
             // 调用BeanPostProcesser的初始化前
             for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
-                beanPostProcesser.postProcessBeforeInilazation(beanName, instance);
+                instance = beanPostProcesser.postProcessBeforeInilazation(beanName, instance);
             }
 
             // 初始化
@@ -157,7 +157,7 @@ public class ZhaoqiangApplicationContext {
 
             // 调用BeanPostProcesser的初始化后
             for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
-                beanPostProcesser.postProcessAfterInilazation(beanName, instance);
+                instance = beanPostProcesser.postProcessAfterInilazation(beanName, instance);
             }
 
             return instance;

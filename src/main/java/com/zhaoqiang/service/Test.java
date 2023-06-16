@@ -6,7 +6,7 @@ public class Test {
 
     public static void main(String[] args) {
         ZhaoqiangApplicationContext zhaoqiangApplicationContext = new ZhaoqiangApplicationContext(AppConfig.class);
-        UserService userService = (UserService)zhaoqiangApplicationContext.getBean("userService");
+        UserInterface userService = (UserInterface)zhaoqiangApplicationContext.getBean("userService");
         System.out.println(userService);
 
         userService.test();
